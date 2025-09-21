@@ -6,6 +6,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { vitePlugin as remix } from "@remix-run/dev";
 import { vercelPreset } from "@vercel/remix/vite";
 import { installGlobals } from "@remix-run/node";
+import { optimizeCssModules } from "vite-plugin-optimize-css-modules"; // <-- static import
 
 installGlobals();
 
@@ -13,10 +14,9 @@ export default defineConfig((config) => {
   return {
     build: { target: "esnext" },
     plugins: [
-      // Needed because some libs expect Node built-ins in the browser
       nodePolyfills({ include: ["path", "buffer"] }),
 
-      // ❌ remove cloudflareDevProxy; ✅ use Vercel preset instead
+      // Use Vercel's Remix preset (drop Cloudflare dev proxy)
       remix({
         presets: [vercelPreset()],
         future: {
@@ -30,11 +30,8 @@ export default defineConfig((config) => {
       tsconfigPaths(),
       chrome129IssuePlugin(),
 
-      // keep this optimization only for production
-      config.mode === "production" &&
-        (await import("vite-plugin-optimize-css-modules")).optimizeCssModules({
-          apply: "build",
-        }),
+      // Only enable CSS modules optimization in production
+      config.mode === "production" ? optimizeCssModules({ apply: "build" }) : undefined,
     ].filter(Boolean),
   };
 });
